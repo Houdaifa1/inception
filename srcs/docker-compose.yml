@@ -1,0 +1,74 @@
+services :
+  nginx :
+    build         : requirements/nginx
+    image         : nginx
+    restart: unless-stopped
+    container_name: nginx
+    ports       : 
+      - "443:443"
+    depends_on :
+      - wordpress
+    env_file :
+      - .env
+    environment :
+      - DOMAIN_NAME
+    volumes     :
+      - wordpress:/var/www/html
+      - ${ssl_certs_path}:/certs/
+    networks    :
+      - app_net
+      
+  mariadb :
+    build         : requirements/mariadb
+    image         : mariadb
+    restart: unless-stopped
+    container_name: mariadb
+    env_file :
+      - .env
+    environment:
+      - MYSQL_ROOT_PASSWORD
+      - MYSQL_DATABASE
+      - MYSQL_USER
+      - MYSQL_PASSWORD
+    volumes     :
+      - mariadb:/var/lib/mysql
+    networks    :
+      - app_net
+    
+  wordpress     :
+    build         : requirements/wordpress
+    image         : wordpress
+    restart: unless-stopped
+    container_name: wordpress
+    env_file :
+      - .env
+    environment:
+      - DB_NAME
+      - DB_USER
+      - DB_PASSWORD
+      - DB_HOST
+      - DOMAIN_NAME
+    depends_on :
+      - mariadb
+    volumes     :
+      - wordpress:/var/www/html
+    networks    :
+      - app_net
+
+volumes :
+  mariadb :
+    driver : local
+    driver_opts :
+      type : none 
+      device : /home/hdrahm/data/mariadb
+      o : bind
+  wordpress :
+    driver : local
+    driver_opts :
+      type : none
+      device : /home/hdrahm/data/wordpress
+      o : bind
+
+networks:
+  app_net:
+    driver: bridge
